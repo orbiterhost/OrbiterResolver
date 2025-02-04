@@ -19,8 +19,18 @@ contract DeployResolver is Script {
         string memory url = vm.envString("GATEWAY_URL");
         address signer = vm.envAddress("SIGNER");
         address owner = vm.envAddress("OWNER");
+        address publicResolver = vm.envAddress("PUBLIC_RESOLVER");
+        address legacyResolver = vm.envAddress("LEGACY_RESOLVER");
 
-        resolver = new OrbiterResolver(ens, nameWrapper, url, signer, owner);
+        resolver = new OrbiterResolver(
+            ens,
+            nameWrapper,
+            url,
+            signer,
+            owner,
+            publicResolver,
+            legacyResolver
+        );
 
         vm.stopBroadcast();
     }

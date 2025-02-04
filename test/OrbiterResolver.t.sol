@@ -15,11 +15,21 @@ contract OrbiterResolverTest is Test {
     address signer = address(0x123);
     address owner = address(0x456);
     string url = "https://example.com";
+    address publicResolver = address(0x999);
+    address legacyResolver = address(0x888);
 
     function setUp() public {
         ens = new ENSRegistry(); // Use concrete implementation instead of interface
         nameWrapper = INameWrapper(address(0x789)); // Mock wrapper
-        resolver = new OrbiterResolver(ens, nameWrapper, url, signer, owner);
+        resolver = new OrbiterResolver(
+            ens,
+            nameWrapper,
+            url,
+            signer,
+            owner,
+            publicResolver,
+            legacyResolver
+        );
     }
 
     function testSetUrl() public {
@@ -35,18 +45,4 @@ contract OrbiterResolverTest is Test {
         resolver.setSigner(newSigner);
         assertEq(resolver.signer(), newSigner);
     }
-
-    // function testOnlyOwnerCanSetUrl() public {
-    //     string memory newUrl = "https://newexample.com";
-    //     vm.prank(address(0xdef));
-    //     vm.expectRevert("Ownable: caller is not the owner");
-    //     resolver.setUrl(newUrl);
-    // }
-
-    // function testOnlyOwnerCanSetSigner() public {
-    //     address newSigner = address(0xabc);
-    //     vm.prank(address(0xdef));
-    //     vm.expectRevert("Ownable: caller is not the owner");
-    //     resolver.setSigner(newSigner);
-    // }
 }

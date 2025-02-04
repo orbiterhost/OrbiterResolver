@@ -16,7 +16,10 @@ import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "./SignatureVerifier.sol";
 
 interface IResolverService {
-    function resolve(bytes calldata name, bytes calldata data)
+    function resolve(
+        bytes calldata name,
+        bytes calldata data
+    )
         external
         view
         returns (bytes memory result, uint64 expires, bytes memory sig);
@@ -40,20 +43,59 @@ contract OrbiterResolver is
     INameWrapper immutable nameWrapper;
     string public url;
     address public signer;
+    address public publicResolver;
+    address public legacyResolver;
 
-    error OffchainLookup(address sender, string[] urls, bytes callData, bytes4 callbackFunction, bytes extraData);
+    error OffchainLookup(
+        address sender,
+        string[] urls,
+        bytes callData,
+        bytes4 callbackFunction,
+        bytes extraData
+    );
 
-    constructor(ENS _ens, INameWrapper _nameWrapper, string memory _url, address _signer, address _owner)
-        Ownable(_owner)
-    {
+    constructor(
+        ENS _ens,
+        INameWrapper _nameWrapper,
+        string memory _url,
+        address _signer,
+        address _owner,
+        address _publicResolver,
+        address _legacyResolver
+    ) Ownable(_owner) {
         ens = _ens;
         nameWrapper = _nameWrapper;
         url = _url;
         signer = _signer;
+        publicResolver = _publicResolver;
+        legacyResolver = _legacyResolver;
     }
 
-    function resolve(bytes calldata name, bytes memory data) external view virtual returns (bytes memory) {
-        (bool success, bytes memory result) = address(this).staticcall(data);
+    function resolve(
+        bytes calldata name,
+        bytes memory data
+    ) external view virtual returns (bytes memory) {
+        // If we have an onchain result in this contract, return it
+        bytes memory internalResult = resolveOnchain(address(this), data);
+        if (internalResult.length > 0) return internalResult;
+
+        // If we have an onchain result in the latest public resolver, return it
+        bytes memory publicResResult = resolveOnchain(publicResolver, data);
+        if (publicResResult.length > 0) return publicResResult;
+
+        // If we have an onchain result in the legacy public resolver, return it
+        bytes memory legacyResResult = resolveOnchain(legacyResolver, data);
+        if (legacyResResult.length > 0) return legacyResResult;
+
+        // Otherwise, fallback to offchain lookup
+        return resolveOffchain(name, data);
+    }
+
+    function resolveOnchain(
+        address resolver,
+        bytes memory data
+    ) internal view returns (bytes memory) {
+        (bool success, bytes memory result) = resolver.staticcall(data);
         bytes32 hashedResult = keccak256(result);
 
         // keccak256(0x0000000000000000000000000000000000000000000000000000000000000000)
@@ -64,17 +106,25 @@ contract OrbiterResolver is
         // covers addr(node, coinType), text(node, key), ABI(node, contentTypes)
         bytes32 emptyDoubleArg = 0x569e75fc77c1a856f6daaf9e69d8a9566ca34aa47f9133711ce065a571af0cfd;
 
-        if (success && (hashedResult != emptySingleArg) && (hashedResult != emptyDoubleArg)) {
-            // If we have an onchain result, return it
+        if (
+            success &&
+            (hashedResult != emptySingleArg) &&
+            (hashedResult != emptyDoubleArg)
+        ) {
             return result;
-        } else {
-            // Otherwise, fallback to offchain lookup
-            return resolveOffchain(name, data);
         }
+        return bytes("");
     }
 
-    function resolveOffchain(bytes calldata name, bytes memory data) internal view virtual returns (bytes memory) {
-        bytes memory callData = abi.encodeWithSelector(IResolverService.resolve.selector, name, data);
+    function resolveOffchain(
+        bytes calldata name,
+        bytes memory data
+    ) internal view virtual returns (bytes memory) {
+        bytes memory callData = abi.encodeWithSelector(
+            IResolverService.resolve.selector,
+            name,
+            data
+        );
         string[] memory urls = new string[](1);
         urls[0] = url;
         revert OffchainLookup(
@@ -86,21 +136,37 @@ contract OrbiterResolver is
         );
     }
 
-    function resolveWithProof(bytes calldata response, bytes calldata extraData) external view returns (bytes memory) {
-        (address _signer, bytes memory result) = SignatureVerifier.verify(extraData, response);
+    function resolveWithProof(
+        bytes calldata response,
+        bytes calldata extraData
+    ) external view returns (bytes memory) {
+        (address _signer, bytes memory result) = SignatureVerifier.verify(
+            extraData,
+            response
+        );
         require(_signer == signer, "SignatureVerifier: Invalid sigature");
         return result;
     }
 
-    function supportsInterface(bytes4 interfaceID)
+    function supportsInterface(
+        bytes4 interfaceID
+    )
         public
         view
         override(
-            Multicallable, ABIResolver, AddrResolver, ContentHashResolver, InterfaceResolver, NameResolver, TextResolver
+            Multicallable,
+            ABIResolver,
+            AddrResolver,
+            ContentHashResolver,
+            InterfaceResolver,
+            NameResolver,
+            TextResolver
         )
         returns (bool)
     {
-        return interfaceID == type(IExtendedResolver).interfaceId || super.supportsInterface(interfaceID);
+        return
+            interfaceID == type(IExtendedResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
     }
 
     function isAuthorised(bytes32 node) internal view override returns (bool) {
@@ -109,7 +175,8 @@ contract OrbiterResolver is
         if (
             owner == address(nameWrapper)
                 ? !nameWrapper.canModifyName(node, msg.sender)
-                : (owner != msg.sender && !ens.isApprovedForAll(owner, msg.sender))
+                : (owner != msg.sender &&
+                    !ens.isApprovedForAll(owner, msg.sender))
         ) {
             return false;
         }
