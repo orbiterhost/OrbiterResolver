@@ -10,7 +10,7 @@ The Orbiter Resolver is currently only deployed on Ethereum mainnet.
 
 | Chain    | Address                                    |
 |----------|--------------------------------------------|
-| Ethereum | 0x4Fa456bA70dd3a36EDCFf3A077EBdC52e4DB46b2 |
+| Ethereum | [0x4Fa456bA70dd3a36EDCFf3A077EBdC52e4DB46b2](https://etherscan.io/address/0x4Fa456bA70dd3a36EDCFf3A077EBdC52e4DB46b2) |
 
 ## Order of Resolution
 
