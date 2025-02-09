@@ -63,7 +63,18 @@ Deployement includes the following arguments that must be entered
 - ENS Legacy Public Resolver Contract Address
 
 ```bash
-	forge create src/OrbiterResolver.sol:OrbiterResolver --rpc-url <RPC_URL> --account <YOUR_ACCOUNT> --broadcast --constructor-args <REGISTRY_ADDRESS> <NAME_WRAPPER_ADDRESS> https://api.example.com/lookup/{sender}/{data} <SIGNER_ADDRESS> <OWNER_ADDRESS> <PUBLIC_RESOLVER_ADDRESS> <LEGACY_RESOLVER_ADDRESS>
+forge create src/OrbiterResolver.sol:OrbiterResolver \
+  --rpc-url <RPC_URL> \
+  --account <YOUR_ACCOUNT> \
+  --broadcast \
+  --constructor-args \
+  <REGISTRY_ADDRESS> \
+  <NAME_WRAPPER_ADDRESS> \
+  https://api.example.com/lookup/{sender}/{data} \
+  <SIGNER_ADDRESS> \
+  <OWNER_ADDRESS> \
+  <PUBLIC_RESOLVER_ADDRESS> \
+  <LEGACY_RESOLVER_ADDRESS>
 ```
 
 ## Contact
