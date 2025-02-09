@@ -1,66 +1,73 @@
-## Foundry
+## Orbiter Resolver
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+![cover](https://cdn.orbiter.host/ipfs/bafkreicrzsoctepn56fcjyytsa5uzfuqr76mbfbfrkskjaki55x6anjl54)
 
-Foundry consists of:
+A custom ENS resolver made to link Orbiter sites on Base with L1 ENS name content hashes. This contract enables Orbiter to provide a seamless experience for users to link their site with their ENS name.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Deployments
 
-## Documentation
+The Orbiter Resolver is currently only deployed on Ethereum mainnet.
 
-https://book.getfoundry.sh/
+| Chain    | Address                                    |
+|----------|--------------------------------------------|
+| Ethereum | 0x4Fa456bA70dd3a36EDCFf3A077EBdC52e4DB46b2 |
 
-## Usage
+## Order of Resolution
 
-### Build
+The Orbiter Resolver is unique in that it will check Public Resolvers and onchain records before falling back to the offchain gateway. This means if user's have records on the public ENS resolver they don't have to worry about re-writing them to this resolver. As long as the `contenthash` record on the public resolver is blank it will fallback to the Orbiter site that is linked to the account.
 
-```shell
-$ forge build
+```mermaid
+flowchart TD
+    A[Client Request] --> B[OrbiterResolver.resolve]
+    B --> C{Check records on OrbiterResolver}
+    C -->|Found| D[Return Result]
+    C -->|Not Found| E{Check Public Resolver}
+    E -->|Found| D
+    E -->|Not Found| F{Check Legacy Resolver}
+    F -->|Found| D
+    F -->|Not Found| G[Revert with OffchainLookup]
+    G --> H[Gateway Service]
+    H --> I[resolveWithProof]
+    I -->|Verify Signature| D
 ```
 
-### Test
+## Development
 
-```shell
-$ forge test
+To run these contracts locally first install [Foundry](https://book.getfoundry.sh/getting-started/installation).
+
+Clone the repo and install the dependencies
+
+```bash
+git clone https://github.com/orbiterhost/orbiter-resolver
+cd orbiter-resolver
+forge install
 ```
 
-### Format
+Compile and run tests
 
-```shell
-$ forge fmt
+```bash
+forge compile
+forge test
 ```
 
-### Gas Snapshots
+## Deployment
 
-```shell
-$ forge snapshot
+Deployement includes the following arguments that must be entered
+
+- ENS Registry Contract Address
+- ENS Name Wrapper Contract Address
+- URL of the offchain gateway API URL
+- Address that will sign responses offchain
+- Address of the owner of the contract
+- ENS Public Resolver Contract Address
+- ENS Legacy Public Resolver Contract Address
+
+```bash
+	forge create src/OrbiterResolver.sol:OrbiterResolver --rpc-url <RPC_URL> --account <YOUR_ACCOUNT> --broadcast --constructor-args <REGISTRY_ADDRESS> <NAME_WRAPPER_ADDRESS> https://api.example.com/lookup/{sender}/{data} <SIGNER_ADDRESS> <OWNER_ADDRESS> <PUBLIC_RESOLVER_ADDRESS> <LEGACY_RESOLVER_ADDRESS>
 ```
 
-### Anvil
+## Contact
 
-```shell
-$ anvil
-```
+If you have questions feel free to reach out!
 
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+[steve@orbiter.host](mailto:steve@orbiter.host)
