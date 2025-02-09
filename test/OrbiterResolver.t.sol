@@ -21,15 +21,7 @@ contract OrbiterResolverTest is Test {
     function setUp() public {
         ens = new ENSRegistry(); // Use concrete implementation instead of interface
         nameWrapper = INameWrapper(address(0x789)); // Mock wrapper
-        resolver = new OrbiterResolver(
-            ens,
-            nameWrapper,
-            url,
-            signer,
-            owner,
-            publicResolver,
-            legacyResolver
-        );
+        resolver = new OrbiterResolver(ens, nameWrapper, url, signer, owner, publicResolver, legacyResolver);
     }
 
     function testSetUrl() public {

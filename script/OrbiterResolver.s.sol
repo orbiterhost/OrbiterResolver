@@ -22,15 +22,7 @@ contract DeployResolver is Script {
         address publicResolver = vm.envAddress("PUBLIC_RESOLVER");
         address legacyResolver = vm.envAddress("LEGACY_RESOLVER");
 
-        resolver = new OrbiterResolver(
-            ens,
-            nameWrapper,
-            url,
-            signer,
-            owner,
-            publicResolver,
-            legacyResolver
-        );
+        resolver = new OrbiterResolver(ens, nameWrapper, url, signer, owner, publicResolver, legacyResolver);
 
         vm.stopBroadcast();
     }
